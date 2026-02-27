@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Trim Master Pro</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="https://via.placeholder.com/192/2e7d32/ffffff?text=TM">
+    
+    <style>
+        * { box-sizing: border-box; font-family: -apple-system, sans-serif; }
+        body { background: #f0f2f0; margin: 0; padding: 10px; color: #333; }
+        .container { background: white; width: 100%; max-width: 650px; border-radius: 12px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: auto; }
+        
+        h2, h4 { text-align: center; margin: 12px 0; color: #2e7d32; border-bottom: 2px solid #e8f5e9; padding-bottom: 5px; }
+        
+        .form-section { background: #f9f9f9; padding: 12px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 15px; }
+        .row { display: flex; gap: 8px; margin-bottom: 10px; align-items: flex-end; }
+        .col { flex: 1; }
+        label { display: block; font-size: 11px; font-weight: bold; color: #666; margin-bottom: 3px; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; background: #fff; }
+
+        .trimmer-entry { background: #fff; border: 1px solid #eee; padding: 8px; border-radius: 6px; margin-bottom: 8px; display: flex; gap: 6px; align-items: center; }
+        .btn-add { background: #f1f8e9; color: #2e7d32; border: 1px dashed #2e7d32; width: 100%; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-save { background: #2e7d32; color: white; border: none; width: 100%; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; width: 100%; }
+
+        .summary-card { font-size: 11px; border: 1px solid #e0e8e0; border-radius: 8px; margin-bottom: 20px; overflow-x: auto; background: #fff; }
+        table { width: 100%; border-collapse: collapse; min-width: 500px; }
+        th { background: #2e7d32; color: white; padding: 10px 5px; text-align: left; font-size: 10px; }
+        td { padding: 10px 5px; border-bottom: 1px solid #eee; }
+        .grand-total-row { background: #e8f5e9; font-weight: bold; color: #2e7d32; }
+
+        .log-item { background: #fff; border: 1px solid #ccc; border-left: 5px solid #2e7d32; padding: 12px; border-radius: 8px; margin-bottom: 12px; position: relative; font-size: 13px; page-break-inside: avoid; }
+        .log-header { display: flex; justify-content: space-between; font-weight: bold; color: #2e7d32; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px; }
+        .time-badge { background: #e8f5e9; color: #2e7d32; padding: 2px 6px; border-radius: 4px; font-size: 11px; border: 1px solid #2e7d32; }
+        
+        .worker-line { font-size: 12px; padding: 4px; border-bottom: 1px dashed #f0f0f0; display: flex; justify-content: space-between; }
+        .btn-del { position: absolute; top: 10px; right: 10px; color: white; background: #f44336; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; }
+
+        .weight-audit { display: flex; justify-content: space-between; background: #f1f8e9; padding: 8px; border-radius: 6px; margin-top: 10px; font-size: 12px; border: 1px solid #c8e6c9; }
+
+        @media print {
+            .no-print, .form-section, .archive-nav, .btn-del, details { display: none !important; }
+            th { background: #f0f0f0 !important; color: black !important; border: 1px solid #ddd; }
+            td { border: 1px solid #ddd; }
+            .time-badge { border: 1px solid black; color: black; }
+        }
+
+        details { font-size: 12px; margin-top: 20px; background: #eee; padding: 10px; border-radius: 8px; }
+        summary { cursor: pointer; font-weight: bold; text-align: center; }
+        .chip { display: inline-block; background: #fff; padding: 4px 8px; border-radius: 15px; margin: 3px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🌿 Trim Master Pro</h2>
+    
+    <div class="form-section no-print">
+        <div class="row">
+            <div class="col" style="flex:1.5"><label>Strain</label><select id="selStrain"></select></div>
+            <div class="col"><label>Prev. Weight (g)</label><input type="number" id="prevWeight" placeholder="0.0"></div>
+            <div class="col"><label>Time Finished</label><input type="time" id="finishTime"></div>
+        </div>
+        <div id="trimmerRows"></div>
+        <button class="btn-add" onclick="addRow()">+ Add Person to Bag</button>
+        <button class="btn-save" onclick="saveData()">Save Bag Entry</button>
+    </div>
+
+    <div class="archive-nav no-print">
+        <button onclick="archiveCurrentDay()" style="width:100%; padding:10px; background:#1976d2; color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer; margin-bottom:10px;">📁 Archive Today & Clear Screen</button>
+        <div class="row">
+            <div class="col">
+                <label>View Reports:</label>
+                <select id="archiveSelector" onchange="loadArchive(this.value)"></select>
+            </div>
+        </div>
+    </div>
+
+    <h4 id="viewTitle">Shift Summary (Totals)</h4>
+    <div id="summaryView" class="summary-card"></div>
+
+    <h4>Harvest Performance Ledger</h4>
+    <div id="harvestSummaryView" class="summary-card"></div>
+
+    <h4 id="logsTitle">Detailed Bag-by-Bag Logs</h4>
+    <div id="historyView"></div>
+
+    <details class="no-print">
+        <summary>⚙️ Settings & Backups</summary>
+        <div style="margin-top:10px;">
+            <button onclick="exportToCSV()" style="width:100%; padding:12px; background:#2e7d32; color:white; border:none; border-radius:8px; font-weight:bold; margin-bottom:10px;">📊 Download Excel/CSV Backup</button>
+        </div>
+        <div style="margin-top:10px;">
+            <label>Manage Crew</label>
+            <div class="row"><input type="text" id="newCrew"><button onclick="addItem('crew','newCrew')">+</button></div>
+            <div id="crewList"></div>
+        </div>
+        <div style="margin-top:10px;">
+            <label>Manage Strains</label>
+            <div class="row"><input type="text" id="newStrain"><button onclick="addItem('strains','newStrain')">+</button></div>
+            <div id="strainList"></div>
+        </div>
+        <div style="margin-top:15px; display:flex; flex-direction:column; gap:8px;">
+            <button style="padding:12px; background:#455a64; color:white; border:none; border-radius:8px; font-weight:bold;" onclick="window.print()">📄 PDF Report</button>
+            <button style="padding:10px; background:#f44336; color:white; border:none; border-radius:5px; font-weight:bold;" onclick="clearSystem()">⚠️ FACTORY RESET (WIPE ALL)</button>
+        </div>
+    </details>
+</div>
+
+<script>
+    let currentView = 'active';
+
+    // REGISTER SERVICE WORKER FOR OFFLINE USE
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch(err => console.log('SW failed', err));
+        });
+    }
+
+    window.onload = function() { 
+        updateLists(); 
+        if(document.querySelectorAll('.trimmer-entry').length === 0) addRow(); 
+        render(); 
+        setCurrentTime();
+        populateArchiveList();
+    };
+
+    function setCurrentTime() {
+        const now = new Date();
+        document.getElementById('finishTime').value = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+    }
+
+    function addRow() {
+        const crew = JSON.parse(localStorage.getItem('crew')) || [];
+        const div = document.createElement('div');
+        div.className = 'trimmer-entry';
+        div.innerHTML = `
+            <select class="s-crew" style="flex:1.5"><option value="">Name</option>${crew.map(n=>`<option value="${n}">${n}</option>`).join('')}</select>
+            <input type="number" class="l-w" style="flex:0.8" placeholder="Lrg">
+            <input type="number" class="p-w" style="flex:0.8" placeholder="Pop">
+            <span onclick="this.parentElement.remove()" style="color:red; cursor:pointer; padding:5px; font-weight:bold;">×</span>`;
+        document.getElementById('trimmerRows').appendChild(div);
+    }
+
+    function addItem(key, id) {
+        const val = document.getElementById(id).value.trim();
+        if (!val) return;
+        let list = JSON.parse(localStorage.getItem(key)) || [];
+        if (!list.includes(val)) list.push(val);
+        localStorage.setItem(key, JSON.stringify(list.sort()));
+        document.getElementById(id).value = '';
+        updateLists();
+    }
+
+    function updateLists() {
+        const crew = JSON.parse(localStorage.getItem('crew')) || [];
+        const strains = JSON.parse(localStorage.getItem('strains')) || [];
+        document.getElementById('crewList').innerHTML = crew.map(n=>`<span class="chip">${n}<span onclick="removeItem('crew','${n}')" style="color:red;margin-left:5px;cursor:pointer;">×</span></span>`).join('');
+        document.getElementById('strainList').innerHTML = strains.map(s=>`<span class="chip">${s}<span onclick="removeItem('strains','${s}')" style="color:red;margin-left:5px;cursor:pointer;">×</span></span>`).join('');
+        document.getElementById('selStrain').innerHTML = '<option value="">Select Strain...</option>' + strains.map(s=>`<option value="${s}">${s}</option>`).join('');
+    }
+
+    function saveData() {
+        const strain = document.getElementById('selStrain').value;
+        const timeInput = document.getElementById('finishTime').value;
+        const prevW = parseFloat(document.getElementById('prevWeight').value) || 0;
+        const entries = [];
+        document.querySelectorAll('.trimmer-entry').forEach(r => {
+            const name = r.querySelector('.s-crew').value;
+            const l = parseFloat(r.querySelector('.l-w').value) || 0;
+            const p = parseFloat(r.querySelector('.p-w').value) || 0;
+            if (name && (l+p > 0)) entries.push({ name, l, p });
+        });
+        if (!strain || !entries.length) return alert("Select Strain and Weights");
+        
+        let logs = JSON.parse(localStorage.getItem('qcLogs')) || [];
+        logs.push({ 
+            id: Date.now(), 
+            strain: strain, 
+            time: timeInput, 
+            prevWeight: prevW,
+            entries: entries, 
+            timestamp: Date.now(), 
+            date: new Date().toLocaleDateString() 
+        });
+        localStorage.setItem('qcLogs', JSON.stringify(logs));
+        document.getElementById('trimmerRows').innerHTML = ''; 
+        document.getElementById('prevWeight').value = ''; 
+        addRow();
+        render(); setCurrentTime();
+    }
+
+    function archiveCurrentDay() {
+        let logs = JSON.parse(localStorage.getItem('qcLogs')) || [];
+        if (logs.length === 0) return alert("Nothing to archive.");
+        if (confirm("Archive today's work?")) {
+            let archives = JSON.parse(localStorage.getItem('trimArchivesQC')) || {};
+            const key = `Shift_${new Date().toLocaleDateString().replace(/\//g,'-')}_${Date.now()}`;
+            archives[key] = logs;
+            localStorage.setItem('trimArchivesQC', JSON.stringify(archives));
+            localStorage.removeItem('qcLogs');
+            populateArchiveList(); render();
+        }
+    }
+
+    function populateArchiveList() {
+        const archives = JSON.parse(localStorage.getItem('trimArchivesQC')) || {};
+        const sel = document.getElementById('archiveSelector');
+        sel.innerHTML = '<option value="active">-- Current Active Session --</option>';
+        Object.keys(archives).sort().reverse().forEach(k => {
+            const date = k.split('_')[1].replace(/-/g,'/');
+            sel.innerHTML += `<option value="${k}">Archive: ${date}</option>`;
+        });
+    }
+
+    function loadArchive(val) {
+        currentView = val;
+        document.getElementById('viewTitle').innerText = val === 'active' ? "Shift Summary (Totals)" : "Archived Shift Summary";
+        render();
+    }
+
+    function exportToCSV() {
+        const activeLogs = JSON.parse(localStorage.getItem('qcLogs')) || [];
+        const archives = JSON.parse(localStorage.getItem('trimArchivesQC')) || {};
+        let allData = [...activeLogs];
+        Object.values(archives).forEach(a => allData = allData.concat(a));
+
+        if (allData.length === 0) return alert("No data to export.");
+
+        let csv = "Date,Time,Strain,PreTrim_Weight,Trimmer,Large_g,Pop_g,Total_g\n";
+        allData.forEach(log => {
+            log.entries.forEach(e => {
+                csv += `${log.date},${log.time},${log.strain},${log.prevWeight},${e.name},${e.l},${e.p},${e.l+e.p}\n`;
+            });
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('href', url);
+        a.setAttribute('download', `harvest_logs_${new Date().toLocaleDateString()}.csv`);
+        a.click();
+    }
+
+    function render() {
+        const archives = JSON.parse(localStorage.getItem('trimArchivesQC')) || {};
+        const activeLogs = JSON.parse(localStorage.getItem('qcLogs')) || [];
+        let logs = (currentView === 'active') ? activeLogs : archives[currentView] || [];
+        
+        let workerStats = {};
+        let histHtml = '';
+
+        logs.slice().reverse().forEach(log => {
+            let logTotal = log.entries.reduce((a,c)=>a+c.l+c.p, 0);
+            let loss = (log.prevWeight > 0) ? (log.prevWeight - logTotal) : 0;
+            
+            histHtml += `<div class="log-item">
+                <button class="btn-del no-print" onclick="deleteEntry(${log.id})">DELETE</button>
+                <div class="log-header">
+                    <span>${log.strain} (${log.date || ''})</span>
+                    <span class="time-badge">Finished: ${log.time}</span>
+                </div>
+                <div>
+                    ${log.entries.map(e => {
+                        const rowNet = e.l + e.p;
+                        const rowPPct = rowNet > 0 ? Math.round((e.p/rowNet)*100) : 0;
+                        return `<div class="worker-line">
+                            <span><strong>${e.name}</strong></span>
+                            <span>L: ${e.l}g | P: ${e.p}g (${rowPPct}%) | Total: ${rowNet.toFixed(1)}g</span>
+                        </div>`;
+                    }).join('')}
+                    
+                    <div class="weight-audit">
+                        <span>Pre-Trim: <strong>${log.prevWeight.toFixed(1)}g</strong></span>
+                        <span>Post-Trim: <strong>${logTotal.toFixed(1)}g</strong></span>
+                        <span style="color: #d32f2f;">Loss: <strong>${loss.toFixed(1)}g</strong></span>
+                    </div>
+                </div>
+            </div>`;
+
+            log.entries.forEach(e => {
+                if(!workerStats[e.name]) workerStats[e.name] = {l:0, p:0};
+                workerStats[e.name].l += e.l; workerStats[e.name].p += e.p;
+            });
+        });
+
+        let sumHtml = `<table><tr><th>Name</th><th>Lrg (g)</th><th>Pop (g)</th><th>Ratios</th><th>Total (g)</th></tr>`;
+        for(let name in workerStats) {
+            const net = workerStats[name].l + workerStats[name].p;
+            const pPct = net > 0 ? Math.round((workerStats[name].p/net)*100) : 0;
+            sumHtml += `<tr>
+                <td>${name}</td><td>${workerStats[name].l.toFixed(1)}</td><td>${workerStats[name].p.toFixed(1)}</td>
+                <td>${100-pPct}%L / ${pPct}%P</td><td><strong>${net.toFixed(1)}g</strong></td>
+            </tr>`;
+        }
+        document.getElementById('summaryView').innerHTML = Object.keys(workerStats).length ? sumHtml + `</table>` : '<p style="text-align:center;padding:10px;">No shift data.</p>';
+        document.getElementById('historyView').innerHTML = histHtml;
+
+        const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        let weekTotals = {}; let harvestTotals = {};
+        const process = (set) => set.forEach(log => log.entries.forEach(e => {
+            if(!harvestTotals[e.name]) harvestTotals[e.name] = 0;
+            harvestTotals[e.name] += (e.l + e.p);
+            if(log.timestamp > oneWeekAgo) {
+                if(!weekTotals[e.name]) weekTotals[e.name] = 0;
+                weekTotals[e.name] += (e.l + e.p);
+            }
+        }));
+        process(activeLogs); Object.values(archives).forEach(process);
+
+        let harvHtml = `<table><tr><th>Name</th><th>7-Day Total</th><th>Grand Total</th></tr>`;
+        for(let name in harvestTotals) {
+            harvHtml += `<tr><td>${name}</td><td>${(weekTotals[name] || 0).toFixed(1)}g</td><td class="grand-total-row">${harvestTotals[name].toFixed(1)}g</td></tr>`;
+        }
+        document.getElementById('harvestSummaryView').innerHTML = Object.keys(harvestTotals).length ? harvHtml + `</table>` : '<p style="text-align:center;padding:10px;">No harvest records.</p>';
+    }
+
+    function deleteEntry(id) {
+        if(!confirm("Delete this bag?")) return;
+        let logs = JSON.parse(localStorage.getItem('qcLogs')) || [];
+        localStorage.setItem('qcLogs', JSON.stringify(logs.filter(l => l.id !== id)));
+        render();
+    }
+
+    function removeItem(key, val) {
+        let list = JSON.parse(localStorage.getItem(key)) || [];
+        localStorage.setItem(key, JSON.stringify(list.filter(i=>i!==val)));
+        updateLists(); render();
+    }
+
+    function clearSystem() {
+        if(confirm("THIS WIPES EVERYTHING. Proceed?")) { localStorage.clear(); location.reload(); }
+    }
+</script>
+</body>
+</html>
